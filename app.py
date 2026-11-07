@@ -576,6 +576,86 @@ def kana_recommendations(word, result):
             instruction,
         )
 
+    # 기존 추천 규칙에 해당하지 않으면 다른 음소 차이도 확인
+    if not candidates:
+        replacements = [
+            (expected, observed)
+            for expected, observed, kind in alignment
+            if kind == "replace"
+        ]
+
+        missing = [
+            expected
+            for expected, observed, kind in alignment
+            if kind == "missing"
+        ]
+
+        if replacements:
+            expected, observed = replacements[0]
+            is_vowel = any(
+                char in VOWELS for char in expected
+            )
+
+            if is_vowel:
+                label = tr(
+                    f"{kana}〔모음 /{expected}/ 조정〕",
+                    f"{kana}〔母音 /{expected}/ を調整〕",
+                )
+                instruction = tr(
+                    f"가타카나는 읽기 출발점으로 사용하고, "
+                    f"가운데 모음은 기준 음성의 /{expected}/와 비교해 봐. "
+                    f"이번에는 /{observed}/로 인식됐어. "
+                    "가나를 그대로 읽기보다 기준 모음을 듣고 따라 해 봐.",
+                    f"カタカナを読みの出発点にし、"
+                    f"母音は基準音声の /{expected}/ と比べましょう。"
+                    f"今回は /{observed}/ と認識されました。"
+                    "カナをそのまま読むだけでなく、基準の母音を聞いて練習しましょう。",
+                )
+            else:
+                label = tr(
+                    f"{kana}〔자음 /{expected}/ 조정〕",
+                    f"{kana}〔子音 /{expected}/ を調整〕",
+                )
+                instruction = tr(
+                    f"이번에는 기준 /{expected}/가 /{observed}/로 인식됐어. "
+                    f"아래 소리별 비교에서 위치를 확인하고, "
+                    f"기준 음성의 /{expected}/ 부분을 중심으로 다시 들어 봐.",
+                    f"今回は基準の /{expected}/ が /{observed}/ と認識されました。"
+                    "下の比較で位置を確認し、"
+                    f"基準音声の /{expected}/ を中心に聞き直しましょう。",
+                )
+
+            add(
+                label,
+                tr(
+                    f"기준 /{expected}/와 인식된 /{observed}/ 사이에 차이가 있어.",
+                    f"基準の /{expected}/ と認識された /{observed}/ に違いがあります。",
+                ),
+                instruction,
+            )
+
+        elif missing:
+            phone = missing[0]
+
+            add(
+                tr(
+                    f"{kana}〔/{phone}/ 연결 확인〕",
+                    f"{kana}〔/{phone}/ のつながりを確認〕",
+                ),
+                tr(
+                    f"기준 소리 /{phone}/가 이번 녹음에서 검출되지 않았어.",
+                    f"基準の /{phone}/ が今回の録音では検出されませんでした。",
+                ),
+                tr(
+                    "기준 음성을 듣고 해당 소리의 위치를 확인해 봐. "
+                    "소리를 과하게 강조하거나 모음을 추가하지 말고 "
+                    "앞뒤 소리와 연결해서 다시 녹음해 봐.",
+                    "基準音声でその音の位置を確認しましょう。"
+                    "過度に強調したり母音を加えたりせず、"
+                    "前後の音とつなげて録音し直してください。",
+                ),
+            )
+    
     return candidates
 
 
